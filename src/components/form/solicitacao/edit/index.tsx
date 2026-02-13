@@ -148,7 +148,6 @@ interface SolicitacaoType {
 }
 
 function FormSolicitacaoEdit({ id, data, session }: FormSolicitacaoEditProps) {
-  console.log("🚀 ~ FormSolicitacaoEdit ~ data:", data.tags);
   const toast = useToast();
   const router = useRouter();
   const [form, setForm] = useState<SolicitacaoType>(data);
@@ -274,8 +273,15 @@ function FormSolicitacaoEdit({ id, data, session }: FormSolicitacaoEditProps) {
             id="nome"
             type="text"
             label="Nome"
-            value={form?.nome || ""}
-            onvalue={(value) => handleChange("nome", value)}
+            value={form?.nome.toUpperCase() || ""}
+            onvalue={(value) => {
+              const normalizedValue = value
+                .toUpperCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+
+              handleChange("nome", normalizedValue);
+            }}
             required
             isReadOnly={!isAdmin}
           />

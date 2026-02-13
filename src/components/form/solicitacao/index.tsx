@@ -1,9 +1,23 @@
 import InputBasic from "@/components/input/basic";
 import MaskedInput from "@/components/input/masked";
 import { Session } from "@/types/session";
-import { Button, Flex, Spinner, Text, useToast } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Spinner,
+  Text,
+  useToast,
+  useDisclosure,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  useColorModeValue,
+} from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SelectConstEmpFinCor from "../select";
 
 interface FormSolicitacaoProps {
@@ -32,10 +46,21 @@ export default function FormSolicitacao({
 
   const [Logwhats, setLogwhats] = useState<string>("");
   const [load, setLoad] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const toast = useToast();
   const isAdmin = session?.user?.hierarquia === "ADM";
   const [Sms, setSms] = useState<boolean>(true);
 
+  // --- CORES DARK MODE ---
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("#E8E8E8", "gray.600");
+  const cardBg = useColorModeValue("gray.50", "gray.700");
+  const cardBorder = useColorModeValue("gray.200", "gray.600");
+  const footerBg = useColorModeValue("gray.100", "gray.900");
+  const textColor = useColorModeValue("gray.800", "white");
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = useRef<any>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,7 +84,7 @@ export default function FormSolicitacao({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlesubmit = async () => {
+  const handlesubmit = async (forceNoSms: boolean = false) => {
     if (
       !form.nome ||
       !form.cpf ||
@@ -70,181 +95,116 @@ export default function FormSolicitacao({
       !form.financeira ||
       !form.datanascimento
     ) {
-      const capos = [];
-      if (!form.nome) {
-        capos.push("Nome");
-      }
-      if (!form.cpf) {
-        capos.push("CPF");
-      }
-      if (!form.email) {
-        capos.push("Email");
-      }
-      if (!form.telefone) {
-        capos.push("Telefone");
-      }
-      if (!form.construtora) {
-        capos.push("Construtora");
-      }
-      if (!form.empreendimento) {
-        capos.push("Empreendimento");
-      }
-      if (!form.financeira) {
-        capos.push("Financeira");
-      }
-      if (!form.datanascimento) {
-        capos.push("Data de Nascimento");
-      }
       toast({
         title: "Preencha todos os campos",
-        description:
-          "os seguintes campos não foram preenchidos:" + capos.join(", "),
         status: "error",
-        duration: 15000,
+        duration: 5000,
         isClosable: true,
         position: "top-right",
       });
-    } else {
-      const request = await fetch(
-        `/api/consulta/cpf/${form.cpf.replace(/\W+/g, "")}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!request.ok) {
-        toast({
-          title: "Erro!",
-          description: "Erro ao verificar CPF!",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-      const response = await request.json();
-      if (response.cpf) {
-        toast({
-          title: "CPF já cadastrado!",
-          description: response.message || "CPF já cadastrado!",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
+      return;
+    }
+
+    const sendSms = forceNoSms ? false : Sms;
+
+    const data: any = {
+      url: typeof window !== "undefined" ? window.location.href : "",
+      nome: form.nome.trim().replace(/\s+/g, " "),
+      telefone: form.telefone.replace(/\W+/g, ""),
+      cpf: form.cpf.replace(/\W+/g, ""),
+      ...(form.telefone2 && { telefone2: form.telefone2?.replace(/\W+/g, "") }),
+      email: form.email.replace(/\s+/g, "").toLowerCase(),
+      corretor: isAdmin ? Number(form.corretor) : Number(session?.user?.id),
+      construtora: Number(form.construtora),
+      empreendimento: Number(form.empreendimento),
+      dt_nascimento: new Date(form.datanascimento),
+      financeiro: Number(form.financeira),
+      ...(Logwhats && { obs: Logwhats }),
+    };
+
+    try {
+      setLoad(true);
+      const response = await fetch(`/api/solicitacao?sms=${sendSms}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const retorno = await response.json();
+
+      if (response.ok) {
+        toast({ title: "Sucesso", status: "success", duration: 3000 });
+        if (retorno.id) router.push("/home");
       } else {
-        const data: any = {
-          url: typeof window !== "undefined" ? window.location.href : "",
-          nome: form.nome.trim().replace(/\s+/g, " "),
-          telefone: form.telefone.replace(/\W+/g, ""),
-          cpf: form.cpf.replace(/\W+/g, ""),
-          ...(form.telefone2 && {
-            telefone2: form.telefone2?.replace(/\W+/g, ""),
-          }),
-          email: form.email.replace(/\s+/g, "").toLowerCase(),
-          corretor:
-            session?.user?.hierarquia === "ADM"
-              ? Number(form.corretor)
-              : Number(session?.user?.id),
-          construtora: Number(form.construtora),
-          empreendimento: Number(form.empreendimento),
-          dt_nascimento: new Date(form.datanascimento),
-
-          financeiro: Number(form.financeira),
-          ...(Logwhats && { obs: Logwhats }),
-        };
-
-        try {
-          setLoad(true);
-          const response = await fetch(`/api/solicitacao?sms=${Sms}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data),
-          });
-
-          const retorno = await response.json();
-          if (response.ok) {
-            toast({
-              title: "Sucesso",
-              description: "Solicitacao enviada com sucesso",
-              status: "success",
-              duration: 3000,
-              isClosable: true,
-            });
-            setLoad(false);
-            if (retorno.id) {
-              router.push("/home");
-            }
-          } else {
-            toast({
-              title: "Erro",
-              description: retorno.message,
-              status: "error",
-              duration: 3000,
-              isClosable: true,
-            });
-            router.push("/home");
-          }
-          setLoad(false);
-        } catch (error) {
+        const msgErro = Array.isArray(retorno.message)
+          ? retorno.message.join(", ")
+          : retorno.message || "";
+        if (
+          msgErro.toUpperCase().includes("WHATSAPP") ||
+          msgErro.toUpperCase().includes("INVALID")
+        ) {
+          setErrorMessage(msgErro);
+          onOpen();
+        } else {
           toast({
-            title: "Erro",
-            description: "Erro ao enviar solicitacao",
+            title: "Erro na Solicitação",
+            description: msgErro,
             status: "error",
-            duration: 3000,
-            isClosable: true,
+            duration: 7000,
           });
-          setLoad(false);
         }
       }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar solicitacao",
+        status: "error",
+      });
+    } finally {
+      setLoad(false);
     }
   };
 
   return (
     <Flex
       w={"100%"}
+      bg={bgColor}
       rounded={"md"}
       margin={"1"}
-      border={"1px solid #E8E8E8"}
+      border={`1px solid ${borderColor}`}
       alignItems={"center"}
-      flexDir={{ base: "column", md: "column" }}
-      flexWrap={{ base: "nowrap", md: "nowrap" }}
+      flexDir="column"
       gap={2}
       shadow={"lg"}
+      p={4}
     >
-      <Text fontSize={"2xl"} fontWeight={"bold"}>
+      <Text fontSize={"2xl"} fontWeight={"bold"} color={textColor}>
         Cadastro Nova Solicitação
       </Text>
-      <Flex
-        w="full"
-        justifyContent="center"
-        flexWrap="wrap"
-        gap={4}
-        mb={2}
-      >
+
+      <Flex w="full" justifyContent="center" flexWrap="wrap" gap={4} mb={2}>
         <MaskedInput
           label="CPF"
           id="cpf"
           mask="999.999.999-99"
-          placeholder="CPF"
-          isCpf
-          onvalue={(value) => handleChange("cpf", value)}
+          onvalue={(v) => handleChange("cpf", v)}
+          value={form.cpf || ""}
           Disable
-          value={form.cpf ? form.cpf : ""}
           required
           boxWidth="25%"
         />
         <InputBasic
           label="Nome Completo"
           id="nome"
-          placeholder="Nome Completo"
-          onvalue={(value) => handleChange("nome", value)}
-          value={form.nome
-            .toUpperCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")}
+          onvalue={(v) => {
+            const normalizedValue = v
+              .toUpperCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "");
+
+            handleChange("nome", normalizedValue);
+          }}
+          value={form.nome.toUpperCase()}
           required
           boxWidth="45%"
         />
@@ -252,56 +212,42 @@ export default function FormSolicitacao({
           label="Data de Nascimento"
           id="datanascimento"
           type="date"
-          onvalue={(value) =>
-            handleChange(
-              "datanascimento",
-              new Date(value).toISOString().split("T")[0]
-            )
-          }
-          value={form.datanascimento ? form.datanascimento : ""}
+          onvalue={(v) => handleChange("datanascimento", v)}
+          value={form.datanascimento}
           required
           boxWidth="25%"
         />
       </Flex>
-      <Flex
-        w="full"
-        justifyContent="center"
-        flexWrap="wrap"
-        gap={4}
-        mb={2}
-      >
+
+      <Flex w="full" justifyContent="center" flexWrap="wrap" gap={4} mb={2}>
         <MaskedInput
           label="Whatsapp com DDD"
           id="telefone"
           mask="(99) 99999-9999"
-          placeholder="Whatsapp com DDD"
-          onvalue={(value) => handleChange("telefone", value)}
+          onvalue={(v) => handleChange("telefone", v)}
           value={form.telefone}
           required
-          isWhatsapp
           boxWidth="28%"
           retornoLog={(log) => setLogwhats(log)}
         />
-
         <MaskedInput
           label="Whatsapp com DDD 2"
           id="telefone2"
           mask="(99) 99999-9999"
-          placeholder="Whatsapp com DDD"
-          onvalue={(value) => handleChange("telefone2", value)}
+          onvalue={(v) => handleChange("telefone2", v)}
           value={form.telefone2}
           boxWidth="28%"
         />
         <InputBasic
           label="Email"
           id="email"
-          placeholder="Email"
-          onvalue={(value) => handleChange("email", value)}
+          onvalue={(v) => handleChange("email", v)}
           value={form.email}
           required
           boxWidth="40%"
         />
       </Flex>
+
       <Flex
         w={{ md: "84%", base: "full" }}
         justifyContent={"center"}
@@ -312,33 +258,105 @@ export default function FormSolicitacao({
         <SelectConstEmpFinCor
           session={session.user}
           isAdmin={isAdmin}
-          ValueConstrutora={(value: number) =>
-            handleChange("construtora", value)
-          }
-          ValueEmpreendimento={(value: number) =>
-            handleChange("empreendimento", value)
-          }
-          ValueFinanceira={(value: number) => handleChange("financeira", value)}
-          ValueCorretor={(value: number) => handleChange("corretor", value)}
+          ValueConstrutora={(v) => handleChange("construtora", v)}
+          ValueEmpreendimento={(v) => handleChange("empreendimento", v)}
+          ValueFinanceira={(v) => handleChange("financeira", v)}
+          ValueCorretor={(v) => handleChange("corretor", v)}
           edit={false}
         />
       </Flex>
 
       <Flex
         roundedBottom={"md"}
-        bg={"gray.100"}
+        bg={footerBg}
         justifyContent={"space-around"}
-        p={2}
+        p={4}
         w={"full"}
       >
-        {load ? (
-          <Spinner size={"sm"} />
-        ) : (
-          <Button onClick={handlesubmit} colorScheme="green" isLoading={load}>
-            {load ? "Enviando..." : "Criar Solicitação"}
-          </Button>
-        )}
+        <Button
+          onClick={() => handlesubmit(false)}
+          colorScheme="green"
+          isLoading={load}
+        >
+          Criar Solicitação
+        </Button>
       </Flex>
+
+      {/* MODAL DE CONFIRMAÇÃO */}
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+        isCentered
+        size="lg"
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent bg={bgColor} color={textColor}>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              ⚠️ Erro ao Verificar WhatsApp
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              <Text color="red.500" fontWeight="bold" mb={3}>
+                {errorMessage}
+              </Text>
+              <Text mb={4}>
+                O número <strong>{form.telefone}</strong> falhou. Revise os
+                dados:
+              </Text>
+
+              <Flex
+                direction="column"
+                bg={cardBg}
+                p={4}
+                rounded="md"
+                border="1px solid"
+                borderColor={cardBorder}
+                gap={1}
+                fontSize="sm"
+              >
+                <Text>
+                  <strong>Nome:</strong> {form.nome.toUpperCase()}
+                </Text>
+                <Text>
+                  <strong>CPF:</strong> {form.cpf}
+                </Text>
+                <Text>
+                  <strong>Nascimento:</strong>{" "}
+                  {form.datanascimento
+                    ? new Date(
+                        form.datanascimento + "T00:00:00"
+                      ).toLocaleDateString("pt-BR")
+                    : ""}
+                </Text>
+                <Text>
+                  <strong>Email:</strong> {form.email}
+                </Text>
+              </Flex>
+
+              <Text mt={4} fontWeight="medium" textAlign="center">
+                Deseja criar a solicitação sem WhatsApp?
+              </Text>
+            </AlertDialogBody>
+
+            <AlertDialogFooter gap={3} justifyContent="center" pb={6}>
+              <Button ref={cancelRef} onClick={onClose} variant="outline">
+                Corrigir Telefone
+              </Button>
+              <Button
+                colorScheme="orange"
+                onClick={() => {
+                  onClose();
+                  handlesubmit(true);
+                }}
+                isLoading={load}
+              >
+                Confirmar sem WhatsApp
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Flex>
   );
 }
