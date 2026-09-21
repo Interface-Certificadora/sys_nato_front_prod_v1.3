@@ -20,7 +20,6 @@ import {
   MdAccountBalance,
   MdBusiness,
   MdCopyAll,
-  MdShare,
 } from "react-icons/md";
 import InputBasic from "@/components/input/basic";
 import MaskedInput from "@/components/input/masked";
@@ -244,21 +243,6 @@ export default function FormCadastroDireto({
               onClick={copiarLink}
             >
               {copiado ? "Copiado!" : "Copiar link"}
-            </Button>
-            <Button
-              as="a"
-              href={`https://wa.me/55${form.telefone.replace(
-                /\D/g,
-                "",
-              )}?text=${encodeURIComponent(
-                `Olá! Segue o link para concluir seu cadastro e pagamento do certificado digital: ${linkGerado}`,
-              )}`}
-              target="_blank"
-              rel="noreferrer"
-              leftIcon={<MdShare />}
-              variant="outline"
-            >
-              Enviar por WhatsApp
             </Button>
           </Flex>
           <Divider borderColor={borderColor} />
