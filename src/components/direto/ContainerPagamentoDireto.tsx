@@ -36,6 +36,7 @@ export default function ContainerPagamentoDireto({
   const nome = searchParams.get("nome");
   const cpf = searchParams.get("cpf");
   const idSolicitacao = searchParams.get("idSolicitacao");
+  const linkCliente = searchParams.get("link");
 
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("#E8E8E8", "gray.700");
@@ -53,6 +54,7 @@ export default function ContainerPagamentoDireto({
     txid: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [valorCert, setValorCert] = useState<string>("0.00");
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,7 +74,7 @@ export default function ContainerPagamentoDireto({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ cpf, nome, valor: valorFinal }),
-          }
+          },
         );
 
         const pixResult = await pixRes.json();
@@ -94,7 +96,7 @@ export default function ContainerPagamentoDireto({
                 imagemQrcode: pixResult.imagemQrcode,
                 pg_andamento: "PENDENTE",
               }),
-            }
+            },
           );
         }
 
@@ -116,7 +118,7 @@ export default function ContainerPagamentoDireto({
         setLoading(false);
       }
     },
-    [cpf, nome, tokenJWT, valorCert, toast]
+    [cpf, nome, tokenJWT, valorCert, toast],
   );
 
   // Checa status do PIX e reconhece se expirou
@@ -124,7 +126,7 @@ export default function ContainerPagamentoDireto({
     async (txid: string, targetId?: string | null) => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_STRAPI_API_URL}/pix/verifique/${txid}`
+          `${process.env.NEXT_PUBLIC_STRAPI_API_URL}/pix/verifique/${txid}`,
         );
         const result = await res.json();
 
@@ -157,7 +159,7 @@ export default function ContainerPagamentoDireto({
         console.error("Erro no polling do PIX:", err);
       }
     },
-    [toast, gerarNovoPix]
+    [toast, gerarNovoPix],
   );
 
   useEffect(() => {
@@ -176,7 +178,7 @@ export default function ContainerPagamentoDireto({
           const checkCpfRes = await fetch(
             `${
               process.env.NEXT_PUBLIC_STRAPI_API_URL
-            }/direto/check/pagamento/cpf/${cpf.replace(/\D/g, "")}`
+            }/direto/check/pagamento/cpf/${cpf.replace(/\D/g, "")}`,
           );
           const checkCpfData = await checkCpfRes.json();
           if (checkCpfRes.ok && checkCpfData?.id) {
@@ -193,7 +195,7 @@ export default function ContainerPagamentoDireto({
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${tokenJWT}`,
               },
-            }
+            },
           );
 
           if (!solRes.ok) {
@@ -203,7 +205,7 @@ export default function ContainerPagamentoDireto({
             // a pagar), órfã-lo do registro. Melhor falhar de forma visível
             // e deixar o operador tentar de novo do que arriscar isso.
             throw new Error(
-              "Não foi possível carregar os dados da solicitação. Atualize a página e tente novamente."
+              "Não foi possível carregar os dados da solicitação. Atualize a página e tente novamente.",
             );
           }
 
@@ -223,7 +225,7 @@ export default function ContainerPagamentoDireto({
           // Se já tem PIX associado, verifica primeiro se não está expirado na Efí
           if (solData.pixCopiaECola && solData.imagemQrcode && solData.txid) {
             const checkPix = await fetch(
-              `${process.env.NEXT_PUBLIC_STRAPI_API_URL}/pix/verifique/${solData.txid}`
+              `${process.env.NEXT_PUBLIC_STRAPI_API_URL}/pix/verifique/${solData.txid}`,
             );
             const checkResult = await checkPix.json();
 
@@ -264,7 +266,7 @@ export default function ContainerPagamentoDireto({
         // CASO 2: Nova solicitação via token
         if (token && !token.startsWith("CD")) {
           const infoRes = await fetch(
-            `${process.env.NEXT_PUBLIC_STRAPI_API_URL}/direto/getInfosToken/${token}`
+            `${process.env.NEXT_PUBLIC_STRAPI_API_URL}/direto/getInfosToken/${token}`,
           );
           const infoData = await infoRes.json();
           if (!infoRes.ok)
@@ -309,6 +311,14 @@ export default function ContainerPagamentoDireto({
       navigator.clipboard.writeText(pixData.pixCopiaECola);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (linkCliente) {
+      navigator.clipboard.writeText(linkCliente);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     }
   };
 
@@ -359,8 +369,8 @@ export default function ContainerPagamentoDireto({
                 paymentStatus === "CONCLUIDA"
                   ? "green"
                   : paymentStatus === "PENDENTE"
-                  ? "orange"
-                  : "red"
+                    ? "orange"
+                    : "red"
               }
               px={3}
               py={1}
@@ -369,8 +379,8 @@ export default function ContainerPagamentoDireto({
               {paymentStatus === "CONCLUIDA"
                 ? "PAGO"
                 : paymentStatus === "PENDENTE"
-                ? "AGUARDANDO PAGAMENTO"
-                : "ERRO"}
+                  ? "AGUARDANDO PAGAMENTO"
+                  : "ERRO"}
             </Badge>
           </Flex>
 
@@ -472,6 +482,52 @@ export default function ContainerPagamentoDireto({
                 <Text>Aguardando a detecção do pagamento em tempo real...</Text>
               </Flex>
             </Flex>
+          )}
+
+          {linkCliente && paymentStatus !== "CONCLUIDA" && (
+            <>
+              <Divider borderColor={borderColor} />
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={1}>
+                  Link do cliente
+                </Text>
+                <Text fontSize="xs" color="gray.500" mb={2}>
+                  Envie este link ao cliente. Ele é único e pessoal: o cliente
+                  confirma os dados e paga o mesmo PIX por ele.
+                </Text>
+                <Flex
+                  align="center"
+                  gap={2}
+                  bg={cardPixBg}
+                  p={3}
+                  borderRadius="lg"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <Text
+                    fontSize="xs"
+                    fontFamily="monospace"
+                    wordBreak="break-all"
+                    flex={1}
+                  >
+                    {linkCliente}
+                  </Text>
+                  <IconButton
+                    aria-label="Copiar link do cliente"
+                    icon={
+                      linkCopied ? (
+                        <MdCheckCircle color="#00713D" size={20} />
+                      ) : (
+                        <MdCopyAll size={20} />
+                      )
+                    }
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCopyLink}
+                  />
+                </Flex>
+              </Box>
+            </>
           )}
 
           {paymentStatus === "CONCLUIDA" && (

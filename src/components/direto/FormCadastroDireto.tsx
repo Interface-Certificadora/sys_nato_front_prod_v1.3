@@ -14,13 +14,8 @@ import {
   useColorModeValue,
   SimpleGrid,
   Divider,
-  Input,
 } from "@chakra-ui/react";
-import {
-  MdAccountBalance,
-  MdBusiness,
-  MdCopyAll,
-} from "react-icons/md";
+import { MdAccountBalance, MdBusiness } from "react-icons/md";
 import InputBasic from "@/components/input/basic";
 import MaskedInput from "@/components/input/masked";
 
@@ -73,8 +68,6 @@ export default function FormCadastroDireto({
   });
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [linkGerado, setLinkGerado] = useState<string>("");
-  const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
     if (!tokenJWT) return;
@@ -143,6 +136,13 @@ export default function FormCadastroDireto({
     try {
       setLoading(true);
 
+      const payload = {
+        nome: form.nome.toUpperCase().trim().replace(/\s+/g, " "),
+        cpf: form.cpf.replace(/\D/g, ""),
+        telefone: form.telefone.replace(/\D/g, ""),
+        email: form.email.trim().toLowerCase(),
+      };
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_STRAPI_API_URL}/direto/cadastro-cca`,
         {
@@ -152,10 +152,7 @@ export default function FormCadastroDireto({
             Authorization: `Bearer ${tokenJWT}`,
           },
           body: JSON.stringify({
-            nome: form.nome.toUpperCase().trim().replace(/\s+/g, " "),
-            cpf: form.cpf.replace(/\D/g, ""),
-            telefone: form.telefone.replace(/\D/g, ""),
-            email: form.email.trim().toLowerCase(),
+            ...payload,
             dt_nascimento: new Date(form.datanascimento).toISOString(),
             financeiroId: Number(form.financeira),
             empreendimentoId: Number(form.empreendimento),
@@ -168,12 +165,19 @@ export default function FormCadastroDireto({
       if (!res.ok)
         throw new Error(data.message || "Erro ao cadastrar cliente.");
 
-      setLinkGerado(data.link);
       toast({
         title: "Cliente cadastrado e cobrança gerada!",
         status: "success",
-        duration: 3000,
+        duration: 2000,
       });
+
+      router.push(
+        `/direto/pagamento?nome=${encodeURIComponent(
+          payload.nome,
+        )}&cpf=${payload.cpf}&idSolicitacao=${
+          data.solicitacaoId
+        }&link=${encodeURIComponent(data.link)}`,
+      );
     } catch (error: any) {
       toast({
         title: "Falha na criação",
@@ -185,77 +189,6 @@ export default function FormCadastroDireto({
       setLoading(false);
     }
   };
-
-  const copiarLink = () => {
-    navigator.clipboard.writeText(linkGerado);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  };
-
-  const novoCadastro = () => {
-    setLinkGerado("");
-    setForm({
-      nome: "",
-      cpf: "",
-      datanascimento: "",
-      telefone: "",
-      email: "",
-      empreendimento: "",
-      financeira: "",
-    });
-    setFinanceirasFiltradas([]);
-  };
-
-  if (linkGerado) {
-    return (
-      <Flex w="full" justify="center" align="start" py={4}>
-        <Flex
-          w="full"
-          maxW="700px"
-          bg={bgColor}
-          rounded="md"
-          border="1px solid"
-          borderColor={borderColor}
-          flexDir="column"
-          gap={4}
-          shadow="lg"
-          p={6}
-        >
-          <Text fontSize="2xl" fontWeight="bold" color={textColor}>
-            Link do cliente gerado
-          </Text>
-          <Text fontSize="sm" color="gray.500">
-            Envie o link abaixo ao cliente. Ele é único e pessoal: o cliente
-            confirma os dados e paga o PIX por ele.
-          </Text>
-          <Input
-            value={linkGerado}
-            isReadOnly
-            size="sm"
-            fontFamily="monospace"
-          />
-          <Flex gap={3} wrap="wrap">
-            <Button
-              leftIcon={<MdCopyAll />}
-              colorScheme="green"
-              bg="#00713D"
-              _hover={{ bg: "#005a31" }}
-              onClick={copiarLink}
-            >
-              {copiado ? "Copiado!" : "Copiar link"}
-            </Button>
-          </Flex>
-          <Divider borderColor={borderColor} />
-          <Flex gap={3} justify="flex-end">
-            <Button variant="outline" onClick={() => router.push("/direto")}>
-              Voltar para Vendas Diretas
-            </Button>
-            <Button onClick={novoCadastro}>Novo cadastro</Button>
-          </Flex>
-        </Flex>
-      </Flex>
-    );
-  }
 
   return (
     <Flex w="full" justify="center" align="start" py={4}>
