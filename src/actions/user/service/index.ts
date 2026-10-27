@@ -1,4 +1,5 @@
 "use server";
+import { roleDoFormulario } from "@/data/permissoes";
 import { GetSessionServer } from "@/lib/auth_confg";
 import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -15,21 +16,6 @@ export async function UpdateUser(_: any, data: FormData) {
     };
   }
 
-  const agente_registro = data.get("agente_registro") ? true : false;
-  const natosign = data.get("natosign") ? true : false;
-  const natodoc = data.get("natodoc") ? true : false;
-  const adm = data.get("adm") ? true : false;
-  const direto = data.get("direto") ? true : false;
-  const relatorio = data.get("relatorio") ? true : false;
-  const financeiro = data.get("cad_financeiro") ? true : false;
-  const user = data.get("user") ? true : false;
-  const construtora = data.get("cad_construtora") ? true : false;
-  const empreendimento = data.get("cad_empreendimento") ? true : false;
-  const now = data.get("now") ? true : false;
-  const alert = data.get("alerta") ? true : false;
-  const chamado = data.get("chamado") ? true : false;
-  const chat = data.get("chat") ? true : false;
-  const solicitacao = data.get("solicitacao") ? true : false;
   const id = data.get("id") ?? "";
   const cpf = (data.get("cpf") as string)?.replace(/\D/g, "") ?? "";
   const nome = data.get("nome") ?? "";
@@ -50,23 +36,7 @@ export async function UpdateUser(_: any, data: FormData) {
   const cargo = data.get("cargo") ?? "";
   const hierarquia = data.get("hierarquia") ?? "";
 
-  const roleEdit = {
-    adm,
-    direto,
-    relatorio,
-    financeiro,
-    user,
-    construtora,
-    empreendimento,
-    now,
-    alert,
-    chamado,
-    chat,
-    solicitacao,
-    natosign,
-    natodoc,
-    agente_registro,
-  };
+  const roleEdit = roleDoFormulario(data);
 
   const body = {
     nome,

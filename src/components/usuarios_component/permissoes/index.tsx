@@ -1,43 +1,18 @@
+import {
+  campoPermissao,
+  CATEGORIAS_PERMISSAO,
+  PERMISSOES,
+} from "@/data/permissoes";
 import { UserRoler } from "@/types/session";
-import { Checkbox, Divider, Flex, FormLabel, Heading } from "@chakra-ui/react";
-const lista: { name: keyof UserRoler | string; label: string; tag: string }[] =
-  [
-    { name: "adm", label: "Acesso ao painel administrativo", tag: "adm" },
-    { name: "direto", label: "Acesso ao Nato Direto", tag: "direto" },
-    { name: "relatorio", label: "Acesso ao relatório", tag: "relatorio" },
-    { name: "cad_financeiro", label: "Pode criar CCA", tag: "financeiro" },
-    { name: "user", label: "Pode criar Usuário", tag: "user" },
-    {
-      name: "cad_construtora",
-      label: "Pode criar Construtora",
-      tag: "construtora",
-    },
-    {
-      name: "cad_empreendimento",
-      label: "Pode criar Empreendimento",
-      tag: "empreendimento",
-    },
-    { name: "now", label: "Pode criar Now", tag: "now" },
-    { name: "alerta", label: "Pode criar e responder Alerta", tag: "alert" },
-    { name: "chamado", label: "Pode ver e responder Chamado", tag: "chamado" },
-    { name: "chat", label: "Pode atender o Chat", tag: "chat" },
-    {
-      name: "solicitacao",
-      label: "Pode editar Solicitação",
-      tag: "solicitacao",
-    },
-    { name: "natosign", label: "Pode criar NatoSign", tag: "natosign" },
-    {
-      name: "natodoc",
-      label: "Acesso ao NatoDoc (imobiliária)",
-      tag: "natodoc",
-    },
-    {
-      name: "agente_registro",
-      label: "Agente de Registro",
-      tag: "agente_registro",
-    },
-  ];
+import {
+  Box,
+  Checkbox,
+  Divider,
+  Heading,
+  SimpleGrid,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 
 interface Props {
   data?: UserRoler;
@@ -58,36 +33,55 @@ export default function Permissoes({ data }: Props) {
       >
         Permissões
       </Heading>
-      <Flex
-        w={"100%"}
-        gap={4}
-        px={10}
-        direction={{ base: "column", md: "row" }}
-        flexWrap={"wrap"}
+      <SimpleGrid
+        w="100%"
+        columns={{ base: 1, md: 2, xl: 3 }}
+        spacing={4}
+        px={{ base: 0, md: 4 }}
+        mt={3}
       >
-        {lista.map((item) => {
-          const isChecked = data?.[item.tag as keyof UserRoler];
-          return (
-            <Flex flexDir={"row"} gap={2} key={item.name}>
-              <Checkbox
-                borderColor="gray.500"
-                name={item.name}
-                defaultChecked={isChecked}
-                _dark={{ borderColor: "gray.400" }}
-              />
-              <FormLabel
-                fontSize="sm"
-                fontWeight="md"
-                m={0}
-                color="gray.700"
-                _dark={{ color: "gray.300" }}
-              >
-                {item.label}
-              </FormLabel>
-            </Flex>
-          );
-        })}
-      </Flex>
+        {CATEGORIAS_PERMISSAO.map((categoria) => (
+          <Box
+            key={categoria}
+            borderWidth="1px"
+            borderColor="gray.200"
+            borderRadius="lg"
+            p={4}
+            _dark={{ borderColor: "gray.600" }}
+          >
+            <Text
+              fontSize="xs"
+              fontWeight="bold"
+              textTransform="uppercase"
+              letterSpacing="wide"
+              color="gray.500"
+              _dark={{ color: "gray.400" }}
+              mb={3}
+            >
+              {categoria}
+            </Text>
+            <VStack align="stretch" spacing={2}>
+              {PERMISSOES.filter((p) => p.categoria === categoria).map((p) => (
+                <Checkbox
+                  key={p.chave}
+                  name={campoPermissao(p.chave)}
+                  defaultChecked={!!data?.[p.chave as keyof UserRoler]}
+                  borderColor="gray.500"
+                  _dark={{ borderColor: "gray.400" }}
+                >
+                  <Text
+                    fontSize="sm"
+                    color="gray.700"
+                    _dark={{ color: "gray.300" }}
+                  >
+                    {p.label}
+                  </Text>
+                </Checkbox>
+              ))}
+            </VStack>
+          </Box>
+        ))}
+      </SimpleGrid>
     </>
   );
 }

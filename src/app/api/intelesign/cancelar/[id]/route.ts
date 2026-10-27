@@ -13,8 +13,14 @@ export async function POST(
     if (!session?.token) {
       return new Response("Unauthorized", { status: 401 });
     }
-    if (session.user?.hierarquia !== "ADM" && !session.user?.role?.natosign) {
-      return new Response("Unauthorized", { status: 401 });
+    if (
+      session.user?.hierarquia !== "ADM" &&
+      !(session.user?.role?.natosign && session.user?.role?.natosign_cancelar)
+    ) {
+      return NextResponse.json(
+        { message: "Você não tem permissão para cancelar envelopes" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json().catch(() => ({}));

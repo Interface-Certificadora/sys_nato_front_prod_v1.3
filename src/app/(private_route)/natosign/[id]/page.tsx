@@ -168,7 +168,13 @@ export default async function NatosignView({ params }: Props) {
           shadow="lg"
           minH="400px"
         >
-          <NatosignViewClient envelope={envelope} />
+          <NatosignViewClient
+            envelope={envelope}
+            podeCancelar={
+              session?.user?.hierarquia === "ADM" ||
+              !!session?.user?.role?.natosign_cancelar
+            }
+          />
         </Box>
       </VStack>
     </Container>

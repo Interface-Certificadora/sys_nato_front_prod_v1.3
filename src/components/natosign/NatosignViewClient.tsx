@@ -148,10 +148,13 @@ type EnvelopeType = {
 
 interface NatosignViewClientProps {
   envelope: EnvelopeType;
+  /** ADM ou permissão "Pode cancelar envelopes" */
+  podeCancelar?: boolean;
 }
 
 export default function NatosignViewClient({
   envelope,
+  podeCancelar,
 }: NatosignViewClientProps) {
   const router = useRouter();
   const toast = useToast();
@@ -435,7 +438,7 @@ export default function NatosignViewClient({
               Reenviar para pendentes
             </Button>
           )}
-          {!cancelado && (
+          {!cancelado && podeCancelar && (
             <Button
               leftIcon={<FiSlash />}
               onClick={modalCancelar.onOpen}

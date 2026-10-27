@@ -1,24 +1,10 @@
 "use server";
 
+import { roleDoFormulario } from "@/data/permissoes";
 import { GetSessionServer } from "@/lib/auth_confg";
 import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
-const permissoesDisponiveis = [
-  "adm",
-  "direto",
-  "relatorio",
-  "cad_financeiro",
-  "user",
-  "cad_construtora",
-  "cad_empreendimento",
-  "now",
-  "alerta",
-  "chamado",
-  "solicitacao",
-  "natosign",
-  "natodoc",
-];
 // Função responsável por criar um novo usuário a partir dos dados do formulário
 export default async function UserCreate(_: any, data: FormData) {
   // Extração dos campos do formulário
@@ -49,15 +35,8 @@ export default async function UserCreate(_: any, data: FormData) {
   const password = data.get("senha") as string;
   const passwordConfir = data.get("confirsenha") as string;
 
-  // Objeto para armazenar as permissões
-  const permissoes: { [key: string]: boolean } = {};
-
-  // Itera sobre as permissões disponíveis e verifica se elas foram marcadas no formulário
-  permissoesDisponiveis.forEach((permissao) => {
-    // Se data.get(permissao) retornar um valor (ou seja, 'on'), significa que a checkbox estava marcada.
-    // Se retornar null, a checkbox não estava marcada.
-    permissoes[permissao] = data.get(permissao) === "on";
-  });
+  // Permissões marcadas no formulário, já com as chaves usadas no role
+  const permissoes = roleDoFormulario(data);
 
   // Busca a sessão do usuário logado
   const session = await GetSessionServer();

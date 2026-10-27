@@ -111,5 +111,6 @@ declare namespace SessionNext {
     empreendimento?: boolean;
     relatorio?: boolean;
     natosign?: boolean;
+    natosign_cancelar?: boolean;
   }
 }
