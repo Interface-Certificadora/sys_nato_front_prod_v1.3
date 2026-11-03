@@ -8,6 +8,7 @@ import ModalAddCobranca from "@/components/adm/modal/add_cobranca";
 import { useSession } from "@/hook/useSession";
 import {
   Box,
+  Button,
   Container,
   Flex,
   Heading,
@@ -16,7 +17,9 @@ import {
   VStack,
   useToast,
 } from "@chakra-ui/react";
+import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
+import { FaFileSignature } from "react-icons/fa";
 import { LuDollarSign, LuFileText } from "react-icons/lu";
 import { 
   MdDashboard, 
@@ -149,6 +152,16 @@ export default function AdmSwitch() {
 
             {session?.role.relatorio && (
               <Flex gap={2} wrap="wrap">
+                <Button
+                  as={Link}
+                  href="/adm/natosign"
+                  leftIcon={<FaFileSignature />}
+                  variant="outline"
+                  colorScheme="green"
+                  size={{ base: "sm", md: "md" }}
+                >
+                  Financeiro NatoSign
+                </Button>
                 <ModalAddCobranca />
                 <ModalAddAlerta />
               </Flex>
