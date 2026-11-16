@@ -14,6 +14,7 @@ import {
   Heading,
   HStack,
   Link,
+  Input,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -150,11 +151,14 @@ interface NatosignViewClientProps {
   envelope: EnvelopeType;
   /** ADM ou permissão "Pode cancelar envelopes" */
   podeCancelar?: boolean;
+  /** Só ADM pode corrigir o email do signatário */
+  isAdm?: boolean;
 }
 
 export default function NatosignViewClient({
   envelope,
   podeCancelar,
+  isAdm,
 }: NatosignViewClientProps) {
   const router = useRouter();
   const toast = useToast();
@@ -166,6 +170,57 @@ export default function NatosignViewClient({
   const [motivo, setMotivo] = useState("");
   const [cancelando, setCancelando] = useState(false);
   const cancelado = !!envelope.cancelado_em;
+  const modalEmail = useDisclosure();
+  const [signatarioEmail, setSignatarioEmail] = useState<any>(null);
+  const [novoEmail, setNovoEmail] = useState("");
+  const [salvandoEmail, setSalvandoEmail] = useState(false);
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail.trim());
+
+  const abrirEditarEmail = (signer: any) => {
+    setSignatarioEmail(signer);
+    setNovoEmail(signer.email || "");
+    modalEmail.onOpen();
+  };
+
+  const handleEditarEmail = async () => {
+    if (!signatarioEmail) return;
+    setSalvandoEmail(true);
+    try {
+      const response = await fetch(`/api/intelesign/email/${envelope.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signatarioId: signatarioEmail.id,
+          email: novoEmail.trim(),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const msg = Array.isArray(data?.message)
+          ? data.message.join(", ")
+          : data?.message;
+        throw new Error(msg || "Não foi possível alterar o email.");
+      }
+      toast({
+        title: data?.message || "Email alterado",
+        description: data?.data?.aviso || undefined,
+        status: data?.data?.aviso ? "warning" : "success",
+        duration: 8000,
+        isClosable: true,
+      });
+      modalEmail.onClose();
+      router.refresh();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao alterar email",
+        description: error.message,
+        status: "error",
+        isClosable: true,
+      });
+    } finally {
+      setSalvandoEmail(false);
+    }
+  };
 
   const handleCancelar = async () => {
     setCancelando(true);
@@ -530,6 +585,64 @@ export default function NatosignViewClient({
         </ModalContent>
       </Modal>
 
+      <Modal
+        isOpen={modalEmail.isOpen}
+        onClose={modalEmail.onClose}
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent mx={4}>
+          <ModalHeader>Editar email do signatário</ModalHeader>
+          <ModalCloseButton isDisabled={salvandoEmail} />
+          <ModalBody>
+            <VStack align="stretch" spacing={4}>
+              <Text>
+                <b>{signatarioEmail?.nome}</b>
+                <br />
+                Email atual: {signatarioEmail?.email}
+              </Text>
+              <FormControl isInvalid={!!novoEmail && !emailValido}>
+                <FormLabel>Novo email</FormLabel>
+                <Input
+                  type="email"
+                  value={novoEmail}
+                  onChange={(e) => setNovoEmail(e.target.value)}
+                  placeholder="cliente@exemplo.com"
+                  autoFocus
+                />
+              </FormControl>
+              <Alert status="info" borderRadius="md" fontSize="sm">
+                <AlertIcon />O email é trocado na Intellisign sem recriar o
+                envelope. Se for a vez deste signatário assinar, o link é
+                reenviado para o novo email.
+              </Alert>
+            </VStack>
+          </ModalBody>
+          <ModalFooter gap={2}>
+            <Button
+              variant="ghost"
+              onClick={modalEmail.onClose}
+              isDisabled={salvandoEmail}
+            >
+              Voltar
+            </Button>
+            <Button
+              colorScheme="blue"
+              onClick={handleEditarEmail}
+              isLoading={salvandoEmail}
+              loadingText="Salvando..."
+              isDisabled={
+                !emailValido ||
+                novoEmail.trim().toLowerCase() ===
+                  (signatarioEmail?.email || "").toLowerCase()
+              }
+            >
+              Salvar email
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Informações principais */}
       <Box
         bg="gray.50"
@@ -667,6 +780,11 @@ export default function NatosignViewClient({
                 onReenviar={
                   envelopePendente && signatarioPendente(signer)
                     ? () => handleReenviar(signer.id)
+                    : undefined
+                }
+                onEditarEmail={
+                  isAdm && envelopePendente && signatarioPendente(signer)
+                    ? () => abrirEditarEmail(signer)
                     : undefined
                 }
               />

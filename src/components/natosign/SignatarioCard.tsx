@@ -11,7 +11,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { FiSend } from "react-icons/fi";
+import { FiEdit2, FiSend } from "react-icons/fi";
 
 // Função para formatar o CPF (12345678901 -> 123.456.789-01)
 const formatCPF = (cpf: string) => {
@@ -64,6 +64,8 @@ interface SignatarioCardProps {
   /** Quando informado, mostra o botão de reenvio (signatário pendente) */
   onReenviar?: () => void;
   reenviando?: boolean;
+  /** Quando informado, mostra o botão de editar email (somente ADM) */
+  onEditarEmail?: () => void;
 }
 
 export const SignatarioCard = ({
@@ -71,6 +73,7 @@ export const SignatarioCard = ({
   onReenviar,
   reenviando,
   whatsappAtivo,
+  onEditarEmail,
 }: SignatarioCardProps) => {
   const comWhatsapp = whatsappAtivo && !!signer.telefone;
   const lastUpdate = new Date(signer.updatedAt).toLocaleString("pt-BR");
@@ -203,6 +206,18 @@ export const SignatarioCard = ({
             </Text>
           </Box>
         </Flex>
+
+        {onEditarEmail && (
+          <Button
+            leftIcon={<FiEdit2 />}
+            size="sm"
+            variant="outline"
+            colorScheme="blue"
+            onClick={onEditarEmail}
+          >
+            Editar email
+          </Button>
+        )}
 
         {onReenviar && (
           <Button
