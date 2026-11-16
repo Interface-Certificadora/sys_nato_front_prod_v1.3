@@ -2,6 +2,7 @@
 
 import {
   FormControl,
+  FormHelperText,
   FormLabel,
   Select,
   VStack,
@@ -16,6 +17,9 @@ import {
   NumberDecrementStepper,
   useColorModeValue,
 } from "@chakra-ui/react";
+
+// Limites da Intellisign: acima disso o envelope é recusado
+const LIMITE = { title: 60, subject: 60, message: 500 } as const;
 
 interface CcaType {
   id: number;
@@ -367,7 +371,11 @@ export default function Step1({
           _hover={{ borderColor: inputFocusBorder }}
           size="md"
           placeholder="Digite o título do envelope"
+          maxLength={LIMITE.title}
         />
+        <FormHelperText textAlign="right">
+          {(formData.title || "").length}/{LIMITE.title}
+        </FormHelperText>
       </FormControl>
 
       {/* Assunto do Email */}
@@ -389,7 +397,11 @@ export default function Step1({
           _hover={{ borderColor: inputFocusBorder }}
           size="md"
           placeholder="Digite o assunto do email"
+          maxLength={LIMITE.subject}
         />
+        <FormHelperText textAlign="right">
+          {(formData.subject || "").length}/{LIMITE.subject}
+        </FormHelperText>
       </FormControl>
 
       {/* Mensagem do Email */}
@@ -413,7 +425,11 @@ export default function Step1({
           size="md"
           minH="120px"
           resize="vertical"
+          maxLength={LIMITE.message}
         />
+        <FormHelperText textAlign="right">
+          {(formData.message || "").length}/{LIMITE.message}
+        </FormHelperText>
       </FormControl>
 
       {/* Dias para Expiração */}
