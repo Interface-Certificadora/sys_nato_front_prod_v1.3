@@ -170,6 +170,7 @@ export default async function NatosignView({ params }: Props) {
         >
           <NatosignViewClient
             envelope={envelope}
+            isAdm={session?.user?.hierarquia === "ADM"}
             podeCancelar={
               session?.user?.hierarquia === "ADM" ||
               !!session?.user?.role?.natosign_cancelar
