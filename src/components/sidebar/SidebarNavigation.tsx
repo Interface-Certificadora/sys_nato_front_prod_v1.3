@@ -30,6 +30,7 @@ import MetricsButton from "./metricas";
 import ChamadosButton from "./chamados";
 import ChatButton from "./chat";
 import NowButton from "./Now";
+import CancelamentosNatosignButton from "./CancelamentosNatosign";
 import { Session } from "@/types/session";
 import { isAgenteImobiliario } from "@/lib/agenteImobiliario";
 
@@ -256,6 +257,8 @@ function SidebarContent({
           )}
           {/* Menu de Now */}
           {session && !agenteImobiliario && <NowButton session={session} />}
+          {/* Pedidos de cancelamento do NatoSign (ADM responsável) */}
+          {session && <CancelamentosNatosignButton session={session} />}
           {/* Menu de Administração */}
           {session?.role?.adm && <AdministrativoMenu />}
           {/* Menu de Financeiro */}

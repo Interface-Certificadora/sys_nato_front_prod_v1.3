@@ -80,7 +80,12 @@ export const PERMISSOES: Permissao[] = [
   },
   {
     chave: "natosign_cancelar",
-    label: "Pode cancelar envelopes",
+    label: "Pode solicitar cancelamento de envelopes",
+    categoria: "NatoSign e NatoDoc",
+  },
+  {
+    chave: "natosign_confirmar_cancelamento",
+    label: "Recebe e confirma cancelamentos do NatoSign (somente ADM)",
     categoria: "NatoSign e NatoDoc",
   },
   {

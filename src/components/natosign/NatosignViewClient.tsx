@@ -144,6 +144,9 @@ type EnvelopeType = {
   /** Cancelado só no SisNato; null quando ativo */
   cancelado_em?: string | null;
   cancelado_por?: string | null;
+  /** Pedido de cancelamento aguardando o ADM responsável */
+  cancelamento_solicitado_em?: string | null;
+  cancelamento_solicitado_por?: string | null;
   motivo_cancelamento?: string | null;
 };
 
@@ -153,12 +156,15 @@ interface NatosignViewClientProps {
   podeCancelar?: boolean;
   /** Só ADM pode corrigir o email do signatário */
   isAdm?: boolean;
+  /** ADM responsável por confirmar os pedidos de cancelamento */
+  podeConfirmarCancelamento?: boolean;
 }
 
 export default function NatosignViewClient({
   envelope,
   podeCancelar,
   isAdm,
+  podeConfirmarCancelamento,
 }: NatosignViewClientProps) {
   const router = useRouter();
   const toast = useToast();
@@ -170,6 +176,55 @@ export default function NatosignViewClient({
   const [motivo, setMotivo] = useState("");
   const [cancelando, setCancelando] = useState(false);
   const cancelado = !!envelope.cancelado_em;
+  const pedidoCancelamento =
+    !cancelado && !!envelope.cancelamento_solicitado_em;
+  const modalResposta = useDisclosure();
+  const [acaoPedido, setAcaoPedido] = useState<"confirmar" | "recusar">(
+    "confirmar"
+  );
+  const [respondendo, setRespondendo] = useState(false);
+
+  const abrirResposta = (acao: "confirmar" | "recusar") => {
+    setAcaoPedido(acao);
+    modalResposta.onOpen();
+  };
+
+  const handleResponderPedido = async () => {
+    setRespondendo(true);
+    try {
+      const response = await fetch(
+        `/api/intelesign/cancelamento/${envelope.id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ acao: acaoPedido }),
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.message || "Não foi possível concluir.");
+      }
+      toast({
+        title:
+          acaoPedido === "confirmar"
+            ? "Envelope cancelado"
+            : "Pedido de cancelamento recusado",
+        status: "success",
+        isClosable: true,
+      });
+      modalResposta.onClose();
+      router.refresh();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        status: "error",
+        isClosable: true,
+      });
+    } finally {
+      setRespondendo(false);
+    }
+  };
   const modalEmail = useDisclosure();
   const [signatarioEmail, setSignatarioEmail] = useState<any>(null);
   const [novoEmail, setNovoEmail] = useState("");
@@ -232,10 +287,11 @@ export default function NatosignViewClient({
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data?.message || "Não foi possível cancelar.");
+        throw new Error(data?.message || "Não foi possível solicitar.");
       }
       toast({
-        title: "Envelope cancelado",
+        title: "Cancelamento solicitado",
+        description: "O administrador responsável vai analisar o pedido.",
         status: "success",
         isClosable: true,
       });
@@ -244,7 +300,7 @@ export default function NatosignViewClient({
       router.refresh();
     } catch (error: any) {
       toast({
-        title: "Erro ao cancelar",
+        title: "Erro ao solicitar cancelamento",
         description: error.message,
         status: "error",
         isClosable: true,
@@ -493,7 +549,7 @@ export default function NatosignViewClient({
               Reenviar para pendentes
             </Button>
           )}
-          {!cancelado && podeCancelar && (
+          {!cancelado && !pedidoCancelamento && podeCancelar && (
             <Button
               leftIcon={<FiSlash />}
               onClick={modalCancelar.onOpen}
@@ -501,11 +557,64 @@ export default function NatosignViewClient({
               variant="outline"
               colorScheme="red"
             >
-              Cancelar envelope
+              Solicitar cancelamento
             </Button>
           )}
         </Flex>
       </Flex>
+
+      {pedidoCancelamento && (
+        <Alert
+          status="warning"
+          variant="left-accent"
+          borderRadius="lg"
+          alignItems="flex-start"
+        >
+          <AlertIcon mt={1} />
+          <Box flex="1">
+            <AlertTitle fontSize="lg">Cancelamento solicitado</AlertTitle>
+            <AlertDescription display="block">
+              Solicitado em{" "}
+              {new Date(envelope.cancelamento_solicitado_em!).toLocaleString(
+                "pt-BR"
+              )}
+              {envelope.cancelamento_solicitado_por &&
+                ` por ${envelope.cancelamento_solicitado_por}`}
+              . Aguardando o administrador responsável.
+              {envelope.motivo_cancelamento && (
+                <Text mt={1}>
+                  <b>Motivo:</b> {envelope.motivo_cancelamento}
+                </Text>
+              )}
+              {podeConfirmarCancelamento && (
+                <>
+                  <Text mt={2} fontSize="sm">
+                    Cancele o envelope na Intellisign (Soluti) e depois
+                    confirme aqui.
+                  </Text>
+                  <Flex gap={2} mt={3} wrap="wrap">
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      leftIcon={<FiSlash />}
+                      onClick={() => abrirResposta("confirmar")}
+                    >
+                      Confirmar cancelamento
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => abrirResposta("recusar")}
+                    >
+                      Recusar pedido
+                    </Button>
+                  </Flex>
+                </>
+              )}
+            </AlertDescription>
+          </Box>
+        </Alert>
+      )}
 
       {cancelado && (
         <Alert
@@ -538,19 +647,19 @@ export default function NatosignViewClient({
       >
         <ModalOverlay />
         <ModalContent mx={4}>
-          <ModalHeader>Cancelar envelope?</ModalHeader>
+          <ModalHeader>Solicitar cancelamento?</ModalHeader>
           <ModalCloseButton isDisabled={cancelando} />
           <ModalBody>
             <VStack align="stretch" spacing={4}>
               <Text>
-                O envelope <b>{envelope.title}</b> ficará marcado como cancelado
-                e não poderá mais ser reenviado. Esta ação não pode ser
-                desfeita.
+                O pedido de cancelamento do envelope <b>{envelope.title}</b>{" "}
+                vai para o administrador responsável, que cancela na
+                Intellisign e confirma no SisNato.
               </Text>
               <Alert status="warning" borderRadius="md" fontSize="sm">
-                <AlertIcon />O cancelamento vale só no SisNato. A Intellisign
-                não é avisada, então quem já recebeu o link ainda consegue
-                assinar por lá.
+                <AlertIcon />
+                Até a confirmação, o envelope continua ativo e os signatários
+                ainda conseguem assinar.
               </Alert>
               <FormControl>
                 <FormLabel>Motivo (opcional)</FormLabel>
@@ -577,9 +686,58 @@ export default function NatosignViewClient({
               leftIcon={<FiSlash />}
               onClick={handleCancelar}
               isLoading={cancelando}
-              loadingText="Cancelando..."
+              loadingText="Enviando..."
             >
-              Cancelar envelope
+              Solicitar cancelamento
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={modalResposta.isOpen}
+        onClose={modalResposta.onClose}
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent mx={4}>
+          <ModalHeader>
+            {acaoPedido === "confirmar"
+              ? "Confirmar cancelamento?"
+              : "Recusar pedido de cancelamento?"}
+          </ModalHeader>
+          <ModalCloseButton isDisabled={respondendo} />
+          <ModalBody>
+            {acaoPedido === "confirmar" ? (
+              <Alert status="warning" borderRadius="md" fontSize="sm">
+                <AlertIcon />
+                Confirme somente depois de cancelar o envelope na Intellisign
+                (Soluti). No SisNato ele ficará marcado como cancelado e não
+                poderá mais ser reenviado.
+              </Alert>
+            ) : (
+              <Text>
+                O pedido será descartado e o envelope segue ativo
+                normalmente.
+              </Text>
+            )}
+          </ModalBody>
+          <ModalFooter gap={2}>
+            <Button
+              variant="ghost"
+              onClick={modalResposta.onClose}
+              isDisabled={respondendo}
+            >
+              Voltar
+            </Button>
+            <Button
+              colorScheme={acaoPedido === "confirmar" ? "red" : "gray"}
+              onClick={handleResponderPedido}
+              isLoading={respondendo}
+            >
+              {acaoPedido === "confirmar"
+                ? "Já cancelei na Intellisign, confirmar"
+                : "Recusar pedido"}
             </Button>
           </ModalFooter>
         </ModalContent>

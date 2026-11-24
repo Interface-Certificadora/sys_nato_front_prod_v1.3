@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-/** Cancela o envelope só no SisNato (a Intellisign não é avisada) */
+/** Solicita o cancelamento; o ADM responsável confirma depois */
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
@@ -18,7 +18,7 @@ export async function POST(
       !(session.user?.role?.natosign && session.user?.role?.natosign_cancelar)
     ) {
       return NextResponse.json(
-        { message: "Você não tem permissão para cancelar envelopes" },
+        { message: "Você não tem permissão para solicitar cancelamento" },
         { status: 403 }
       );
     }
@@ -38,7 +38,7 @@ export async function POST(
     const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Erro ao cancelar envelope:", error);
+    console.error("Erro ao solicitar cancelamento:", error);
     return NextResponse.json(
       { message: "Erro interno do servidor" },
       { status: 500 }
