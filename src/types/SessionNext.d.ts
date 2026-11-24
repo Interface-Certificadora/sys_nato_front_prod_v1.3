@@ -112,5 +112,6 @@ declare namespace SessionNext {
     relatorio?: boolean;
     natosign?: boolean;
     natosign_cancelar?: boolean;
+    natosign_confirmar_cancelamento?: boolean;
   }
 }

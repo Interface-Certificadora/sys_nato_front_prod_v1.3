@@ -121,6 +121,7 @@ declare namespace Session {
     relatorio?: boolean;
     natosign?: boolean;
     natosign_cancelar?: boolean;
+    natosign_confirmar_cancelamento?: boolean;
     agente_registro?: boolean;
     natodoc?: boolean;
     chat?: boolean;
@@ -169,6 +170,7 @@ interface UserRoler {
   relatorio?: boolean;
   natosign?: boolean;
   natosign_cancelar?: boolean;
+  natosign_confirmar_cancelamento?: boolean;
   agente_registro?: boolean;
   natodoc?: boolean;
   chat?: boolean;
