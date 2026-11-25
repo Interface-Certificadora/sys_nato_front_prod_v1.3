@@ -299,6 +299,8 @@ function NavItemComponent({
   const direto = session?.role?.direto;
   const sign = session?.role?.natosign || session?.hierarquia === "ADM";
   const natodoc = session?.role?.natodoc || session?.hierarquia === "ADM";
+  const areaConstrutora =
+    session?.hierarquia === "CONST" || session?.hierarquia === "ADM";
 
   return (
     <>
@@ -536,7 +538,9 @@ function NavItemComponent({
           </Link>
         </>
       )}
-      {(!item.role || (natodoc && item.role === "natodoc")) && (
+      {(!item.role ||
+        (natodoc && item.role === "natodoc") ||
+        (areaConstrutora && item.role === "CONSTRUTORA")) && (
         <>
           <Link
             href={item.href}
