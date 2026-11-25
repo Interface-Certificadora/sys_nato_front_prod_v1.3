@@ -505,10 +505,10 @@ export default function AreaConstrutoraClient({ isAdm }: Props) {
                     trend="das criadas no período"
                   />
                   <ModernStatCard
-                    title="Tempo médio até emitir"
+                    title="Tempo médio até emitir (dias úteis)"
                     value={
                       c?.tempoMedioDias != null
-                        ? `${c.tempoMedioDias.toLocaleString("pt-BR")} dias`
+                        ? `${c.tempoMedioDias.toLocaleString("pt-BR")} dias úteis`
                         : "—"
                     }
                     icon={FaRegClock}
@@ -648,8 +648,10 @@ export default function AreaConstrutoraClient({ isAdm }: Props) {
                     </Text>
                   </Flex>
                   <Text fontSize="xs" color="gray.500">
-                    Taxa de emissão = emitidos ÷ criados no período (os emitidos
-                    podem ter sido criados antes).
+                    Emitidos = aprovados/emitidos no período, sem revogados e
+                    distratos. Taxa de emissão = emitidos ÷ criados no período
+                    (os emitidos podem ter sido criados antes). Tempo até emitir
+                    em dias úteis, sem fins de semana e feriados nacionais.
                   </Text>
                 </VStack>
               </Cartao>
