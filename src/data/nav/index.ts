@@ -1,7 +1,7 @@
 import { NavItem } from "@/types/navitem";
 import { CgBriefcase, CgToday } from "react-icons/cg";
 import { FaSignature } from "react-icons/fa";
-import { FiFilePlus, FiFolder, FiGrid, FiHome } from "react-icons/fi";
+import { FiBarChart2, FiFilePlus, FiFolder, FiGrid, FiHome } from "react-icons/fi";
 
 export const defaultNavItems: NavItem[] = [
   {
@@ -45,6 +45,12 @@ export const defaultNavItems: NavItem[] = [
     icon: FiFolder,
     href: "/natodoc",
     role: "natodoc",
+  },
+  {
+    name: "Área da Construtora",
+    icon: FiBarChart2,
+    href: "/area-construtora",
+    role: "CONSTRUTORA",
   },
   {
     name: "Nato Hub",
