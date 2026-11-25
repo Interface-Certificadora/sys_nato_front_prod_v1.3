@@ -113,5 +113,6 @@ declare namespace SessionNext {
     natosign?: boolean;
     natosign_cancelar?: boolean;
     natosign_confirmar_cancelamento?: boolean;
+    area_construtora?: boolean;
   }
 }

@@ -31,6 +31,11 @@ export const PERMISSOES: Permissao[] = [
     label: "Acesso ao relatório",
     categoria: "Administração",
   },
+  {
+    chave: "area_construtora",
+    label: "Acesso à Área da Construtora (indicadores e relatórios)",
+    categoria: "Administração",
+  },
 
   { chave: "financeiro", label: "Pode criar CCA", categoria: "Cadastros" },
   {
