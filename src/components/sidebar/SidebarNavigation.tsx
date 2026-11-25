@@ -299,8 +299,10 @@ function NavItemComponent({
   const direto = session?.role?.direto;
   const sign = session?.role?.natosign || session?.hierarquia === "ADM";
   const natodoc = session?.role?.natodoc || session?.hierarquia === "ADM";
+  // CONST só com a permissão "Área da Construtora"; ADM sempre
   const areaConstrutora =
-    session?.hierarquia === "CONST" || session?.hierarquia === "ADM";
+    session?.hierarquia === "ADM" ||
+    (session?.hierarquia === "CONST" && !!session?.role?.area_construtora);
 
   return (
     <>

@@ -6,12 +6,15 @@ import AreaConstrutoraClient from "@/components/area-construtora/AreaConstrutora
 
 /**
  * Área restrita da construtora: indicadores e relatórios de movimentação.
- * CONST vê só as suas construtoras; ADM escolhe qualquer uma.
+ * CONST com a permissão area_construtora vê só as suas; ADM escolhe qualquer uma.
  */
 export default async function AreaConstrutoraPage() {
   const session = await GetSessionServer();
   const hierarquia = session?.user?.hierarquia;
-  if (hierarquia !== "ADM" && hierarquia !== "CONST") {
+  const permitido =
+    hierarquia === "ADM" ||
+    (hierarquia === "CONST" && !!session?.user?.role?.area_construtora);
+  if (!permitido) {
     redirect("/home");
   }
   return <AreaConstrutoraClient isAdm={hierarquia === "ADM"} />;
