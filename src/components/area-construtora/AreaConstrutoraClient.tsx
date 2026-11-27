@@ -89,6 +89,14 @@ type Indicadores = {
     envelopes: number;
     envelopesConcluidos: number;
   }[];
+  imobiliarias: {
+    id: number | null;
+    nome: string;
+    envelopes: number;
+    concluidos: number;
+    emAndamento: number;
+    cancelados: number;
+  }[];
 };
 
 const MESES = [
@@ -693,6 +701,51 @@ export default function AreaConstrutoraClient({ isAdm }: Props) {
               ) : (
                 <Text color="gray.500">
                   {carregando ? "Carregando..." : "Sem movimento no período."}
+                </Text>
+              )}
+            </Cartao>
+
+            {/* Envelopes por imobiliária */}
+            <Cartao titulo="Envelopes por imobiliária">
+              {dados?.imobiliarias?.length ? (
+                <TableContainer>
+                  <Table size="sm">
+                    <Thead>
+                      <Tr>
+                        <Th>Imobiliária</Th>
+                        <Th isNumeric>Envelopes</Th>
+                        <Th isNumeric>Concluídos</Th>
+                        <Th isNumeric>Em andamento</Th>
+                        <Th isNumeric>Cancelados / expirados</Th>
+                        <Th isNumeric>% concluídos</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {dados.imobiliarias.map((imob) => (
+                        <Tr key={imob.id ?? "sem"}>
+                          <Td
+                            fontWeight="medium"
+                            color={imob.id ? undefined : "gray.500"}
+                          >
+                            {imob.nome}
+                          </Td>
+                          <Td isNumeric>{imob.envelopes}</Td>
+                          <Td isNumeric>{imob.concluidos}</Td>
+                          <Td isNumeric>{imob.emAndamento}</Td>
+                          <Td isNumeric>{imob.cancelados}</Td>
+                          <Td isNumeric>
+                            {imob.envelopes
+                              ? `${Math.round((imob.concluidos / imob.envelopes) * 100)}%`
+                              : "—"}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Text color="gray.500">
+                  {carregando ? "Carregando..." : "Sem envelopes no período."}
                 </Text>
               )}
             </Cartao>
